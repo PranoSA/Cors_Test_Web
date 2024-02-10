@@ -279,10 +279,18 @@ func (a Application) RunCorsTest(w http.ResponseWriter, r *http.Request, params 
 				Header:         "",
 				Authentication: false,
 				TestId:         test.Id,
+				Okay:           true,
+				Errors:         make([]string, 0),
+				Time_Generated: time.Now(),
 			}
 			genTests = append(genTests, test_result)
 
+			if test.Header == "" {
+				continue
+			}
+
 			for _, header := range strings.Split(test.Header, ",") {
+
 				//Rest of the Test Cases With Headers
 				var test cors.CorsTestRequest = cors.CorsTestRequest{
 					Owner:          owneruuid,
@@ -293,6 +301,9 @@ func (a Application) RunCorsTest(w http.ResponseWriter, r *http.Request, params 
 					Header:         header,
 					Authentication: false,
 					TestId:         test.Id,
+					Okay:           true,
+					Errors:         make([]string, 0),
+					Time_Generated: time.Now(),
 				}
 				genTests = append(genTests, test)
 				log.Default().Print("test id" + test.Id.String())
@@ -302,25 +313,51 @@ func (a Application) RunCorsTest(w http.ResponseWriter, r *http.Request, params 
 
 	}
 
-	var testResults []cors.CorsTestRequest = make([]cors.CorsTestRequest, 0)
+	//Just Run Tests on genTests
+	for i, _ := range genTests {
+		//Run The Test
+		err := cors.RunCorsTest(&genTests[i])
+		if err != nil {
 
-	for _, test := range genTests {
+			//test.Errors = append(.Errors, err.Error())
+			genTests[i].Okay = false
+			genTests[i].Errors = append(genTests[i].Errors, err.Error())
+		}
+	}
+
+	/*for _, test := range genTests {
 		//Run The Test
 		var next_result cors.CorsTestRequest
 		next_result.Errors = make([]string, 0)
 		next_result.TestId = test.TestId
+		next_result.Okay = true
+		next_result.ApplicationId, err = uuid.Parse(applicationid)
+		next_result.Owner = owneruuid
+		next_result.Origin = test.Origin
+		next_result.Endpoint = test.Endpoint
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		_, err = test.RunCorsTest(&next_result)
 
-		next_result.ApplicationId, err = uuid.Parse(applicationid)
 		if err != nil {
+			log.Default().Print("Not Okay+ " + err.Error())
 			next_result.Okay = false
 			next_result.Errors = append(next_result.Errors, err.Error())
 		}
 		testResults = append(testResults, next_result)
+	}*/
+
+	//Delete All The Previous Results
+	_, err = conn.Exec(r.Context(), "DELETE FROM cors_test_results WHERE application_id = $1 AND owner = $2", applicationid, owneruuid)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	// Now Insert Into Database The Results
-	for i, result := range testResults {
+	for i, result := range genTests {
 		// Insert the application into the database
 		conn := a.Db
 		log.Default().Print(result.ApplicationId)
@@ -429,11 +466,20 @@ func (a Application) GetCorsTestResults(w http.ResponseWriter, r *http.Request, 
 
 	var result []cors.CorsTestRequest = make([]cors.CorsTestRequest, 0)
 
-	rows, err := conn.Query(r.Context(), `SELECT id, owner, application_id, origin, endpoint, methods, headers, authentication FROM cors_tests WHERE application_id = $1 AND owner = $2`, appid, owneruuid)
+	//rows, err := conn.Query(r.Context(), `SELECT id, owner, application_id, origin, endpoint, methods, headers, authentication FROM cors_tests WHERE application_id = $1 AND owner = $2`, appid, owneruuid)
+	rows, err := conn.Query(r.Context(),
+		`SELECT
+	id, owner, application_id, test_id, origin, endpoint, method, header, authentication, okay, errors, return_access_control_allow_origin, 
+		return_access_control_allow_method, return_access_control_allow_headers, return_access_control_max_age, return_access_control_allow_credentials,
+		 return_access_control_expose_header, time_generated, simple
+	FROM cors_test_results WHERE application_id = $1 AND owner = $2`, appid, owneruuid)
 
 	for rows.Next() {
 		var corsTest cors.CorsTestRequest
-		err = rows.Scan(&corsTest.Id, &corsTest.Owner, &corsTest.ApplicationId, &corsTest.Origin, &corsTest.Endpoint, &corsTest.Method, &corsTest.Header, &corsTest.Authentication)
+		err = rows.Scan(&corsTest.Id, &corsTest.Owner, &corsTest.ApplicationId, &corsTest.TestId, &corsTest.Origin, &corsTest.Endpoint, &corsTest.Method, &corsTest.Header,
+			&corsTest.Authentication, &corsTest.Okay, &corsTest.Errors, &corsTest.Return_Access_Control_Allow_Origin, &corsTest.Return_Access_Control_Allow_Method,
+			&corsTest.Return_Access_Control_Allow_Headers, &corsTest.Return_Access_Control_Max_Age, &corsTest.Return_Access_Control_Allow_Credentials,
+			&corsTest.Return_Access_Control_Expose_Header, &corsTest.Time_Generated, &corsTest.Simple)
 		if err != nil {
 			log.Print(err)
 			w.WriteHeader(http.StatusInternalServerError)
