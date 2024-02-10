@@ -325,30 +325,6 @@ func (a Application) RunCorsTest(w http.ResponseWriter, r *http.Request, params 
 		}
 	}
 
-	/*for _, test := range genTests {
-		//Run The Test
-		var next_result cors.CorsTestRequest
-		next_result.Errors = make([]string, 0)
-		next_result.TestId = test.TestId
-		next_result.Okay = true
-		next_result.ApplicationId, err = uuid.Parse(applicationid)
-		next_result.Owner = owneruuid
-		next_result.Origin = test.Origin
-		next_result.Endpoint = test.Endpoint
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		_, err = test.RunCorsTest(&next_result)
-
-		if err != nil {
-			log.Default().Print("Not Okay+ " + err.Error())
-			next_result.Okay = false
-			next_result.Errors = append(next_result.Errors, err.Error())
-		}
-		testResults = append(testResults, next_result)
-	}*/
-
 	//Delete All The Previous Results
 	_, err = conn.Exec(r.Context(), "DELETE FROM cors_test_results WHERE application_id = $1 AND owner = $2", applicationid, owneruuid)
 	if err != nil {
