@@ -1,4 +1,4 @@
-package corstest
+package cors
 
 import (
 	"net/http"
@@ -10,9 +10,10 @@ import (
 // Should I define The Struct Here ....
 
 type CorsTestRequest struct {
+	Id                                      uuid.UUID
 	Owner                                   uuid.UUID
 	ApplicationId                           uuid.UUID
-	ResultsId                               uuid.UUID
+	TestId                                  uuid.UUID
 	Simple                                  bool
 	Origin                                  string
 	Endpoint                                string

@@ -10,5 +10,5 @@ type AuthenticatedUser struct {
 }
 
 type TokenAuthentication interface {
-	AuthenticateToken(*http.Request) (interface{}, error)
+	AuthenticateToken(*http.Request) (*AuthenticatedUser, error)
 }

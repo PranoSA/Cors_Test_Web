@@ -7,7 +7,7 @@ var _ TokenAuthentication = TestCookieAuth{}
 type TestCookieAuth struct {
 }
 
-func (t TestCookieAuth) AuthenticateToken(r *http.Request) (interface{}, error) {
+func (t TestCookieAuth) AuthenticateToken(r *http.Request) (*AuthenticatedUser, error) {
 	// WARNING !!! THIS IS SUBJECT TO CSRF ATTACKS !!! DO NOT USE IN PRODUCTION !!!
 	// This is a test implementation of token authentication that uses a cookie to store the token.
 
@@ -20,5 +20,5 @@ func (t TestCookieAuth) AuthenticateToken(r *http.Request) (interface{}, error) 
 	// Decode the token
 	username := cookie.Value
 
-	return AuthenticatedUser{Subject: username}, nil
+	return &AuthenticatedUser{Subject: username}, nil
 }

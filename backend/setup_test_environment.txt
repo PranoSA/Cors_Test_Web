@@ -1,0 +1,23 @@
+# Postgres 
+
+CREATE DATABASE cors_test;
+
+CREATE USER cors_tester;
+
+ALTER ROLE cors_tester WITH PASSWORD 'test';
+
+GRANT CONNECT ON DATABASE cors_test TO cors_tester;
+
+\c cors_test;
+
+GRANT USAGE ON SCHEMA public TO cors_tester;
+
+GRANT CREATE ON SCHEMA public TO cors_tester;
+
+
+# Migrations
+
+migrate -source file://. -database postgres://cors_tester:test@localhost:5432/cors_test up 1
+
+
+# Fixing Dirty Migrations?

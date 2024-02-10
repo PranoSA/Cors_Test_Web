@@ -2,6 +2,7 @@ package router
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 )
 
 type ApplicationTest struct {
+	Id           uuid.UUID
 	Owner        uuid.UUID
 	Time_Created time.Time
 	Time_Edited  time.Time
@@ -38,16 +40,28 @@ func (a Application) CreateCorsTestApplication(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	application.Owner = owner.(uuid.UUID)
+	varownerstring := owner.Subject
+
+	application.Owner, err = uuid.Parse(varownerstring)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	application.Time_Created = time.Now()
 	application.Time_Edited = time.Now()
 
 	// Insert the application into the database
 	conn := a.Db
 
-	_, err = conn.Exec(r.Context(), "INSERT INTO cors_test_applications (owner, time_created, time_edited, name, description) VALUES ($1, $2, $3, $4, $5)", application.Owner, application.Time_Created, application.Time_Edited, application.Name, application.Description)
+	//_, err = conn.Exec(r.Context(), "INSERT INTO cors_test_applications (owner, time_created, time_edited, name, description) VALUES ($1, $2, $3, $4, $5)", application.Owner, application.Time_Created, application.Time_Edited, application.Name, application.Description)
+
+	row := conn.QueryRow(r.Context(), "INSERT INTO cors_test_applications (owner, time_created, time_edited, name, description) VALUES ($1, $2, $3, $4, $5) RETURNING id, time_created, time_edited", application.Owner, application.Time_Created, application.Time_Edited, application.Name, application.Description)
+
+	err = row.Scan(&application.Id, &application.Time_Created, &application.Time_Edited)
 
 	if err != nil {
+		log.Default().Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -80,23 +94,29 @@ func (a Application) EditCorsTestApplication(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	application.Owner = owner.(uuid.UUID)
+	application.Owner, err = uuid.Parse(owner.Subject)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	application.Time_Edited = time.Now()
 
 	// Insert the application into the database
 	conn := a.Db
 
-	row, err := conn.Exec(r.Context(), "UPDATE cors_test_applications SET time_edited = $1, name = $2, description = $3 WHERE owner = $4 AND WHERE id = $5 ", application.Time_Edited, application.Name, application.Description, application.Owner, id)
+	//row, err := conn.Exec(r.Context(), "UPDATE cors_test_applications SET time_edited = $1, name = $2, description = $3 WHERE owner = $4 AND WHERE id = $5 ", application.Time_Edited, application.Name, application.Description, application.Owner, id)
 
-	if row.RowsAffected() == 0 {
+	row := conn.QueryRow(r.Context(), "UPDATE cors_test_applications SET time_edited = $1, name = $2, description = $3 WHERE owner = $4 AND id = $5 RETURNING time_edited", application.Time_Edited, application.Name, application.Description, application.Owner, id)
+
+	err = row.Scan(&application.Time_Edited)
+
+	if err != nil {
+		log.Default().Print(err)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	application.Id, err = uuid.Parse(id)
 
 	w.WriteHeader(http.StatusOK)
 
@@ -107,6 +127,12 @@ func (a Application) EditCorsTestApplication(w http.ResponseWriter, r *http.Requ
 func (a Application) DeleteCorsApplication(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 
 	id := params.ByName("id")
+	/*iduuid, err := uuid.Parse(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}*/
+
 	// Get the owner from the token
 	owner, err := a.Auth.AuthenticateToken(r)
 	if err != nil {
@@ -117,15 +143,22 @@ func (a Application) DeleteCorsApplication(w http.ResponseWriter, r *http.Reques
 	// Insert the application into the database
 	conn := a.Db
 
-	row, err := conn.Exec(r.Context(), "DELETE FROM cors_test_applications WHERE owner = $1 AND WHERE id = $2 ", owner, id)
-
-	if row.RowsAffected() == 0 {
-		w.WriteHeader(http.StatusNotFound)
+	owneruuid, err := uuid.Parse(owner.Subject)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
+	row := conn.QueryRow(r.Context(), "DELETE FROM cors_test_applications WHERE owner = $1 AND id = $2 RETURNING id", owneruuid, id)
+	var result uuid.UUID
+
+	err = row.Scan(&result)
+
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Default().Print(err)
+		log.Default().Print(id)
+		log.Default().Print(owneruuid)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -136,6 +169,7 @@ func (a Application) DeleteCorsApplication(w http.ResponseWriter, r *http.Reques
 func (a Application) GetCorsTestApplication(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 
 	id := params.ByName("id")
+
 	// Get the owner from the token
 	owner, err := a.Auth.AuthenticateToken(r)
 	if err != nil {
@@ -146,16 +180,31 @@ func (a Application) GetCorsTestApplication(w http.ResponseWriter, r *http.Reque
 	// Insert the application into the database
 	conn := a.Db
 
-	row := conn.QueryRow(r.Context(), "SELECT * FROM cors_test_applications WHERE owner = $1 AND WHERE id = $2 ", owner, id)
+	owneruuid, err := uuid.Parse(owner.Subject)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	row := conn.QueryRow(r.Context(), "SELECT owner, time_created, time_edited, name, description FROM cors_test_applications WHERE owner = $1 AND id = $2 ", owneruuid, id)
+
+	if err != nil {
+		log.Default().Print(err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	application := ApplicationTest{}
 
 	err = row.Scan(&application.Owner, &application.Time_Created, &application.Time_Edited, &application.Name, &application.Description)
 
 	if err != nil {
+		log.Default().Print(err)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+
+	application.Id, err = uuid.Parse(id)
 
 	w.WriteHeader(http.StatusOK)
 
@@ -172,12 +221,20 @@ func (a Application) ListCorsTestApplications(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	owner_string := owner.Subject
+	owneruuid, err := uuid.Parse(owner_string)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	// Insert the application into the database
 	conn := a.Db
 
-	rows, err := conn.Query(r.Context(), "SELECT * FROM cors_test_applications WHERE owner = $1 ", owner)
+	rows, err := conn.Query(r.Context(), "SELECT id, owner, time_created, time_edited, name, description FROM cors_test_applications WHERE owner = $1 ", owneruuid)
 
 	if err != nil {
+		log.Default().Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -186,7 +243,7 @@ func (a Application) ListCorsTestApplications(w http.ResponseWriter, r *http.Req
 
 	for rows.Next() {
 		application := ApplicationTest{}
-		err = rows.Scan(&application.Owner, &application.Time_Created, &application.Time_Edited, &application.Name, &application.Description)
+		err = rows.Scan(&application.Id, &application.Owner, &application.Time_Created, &application.Time_Edited, &application.Name, &application.Description)
 		applications = append(applications, application)
 	}
 
