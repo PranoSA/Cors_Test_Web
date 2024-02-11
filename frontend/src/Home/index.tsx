@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import { Link } from 'react-router-dom';
+import { Link , useNavigate} from 'react-router-dom';
 import { Application } from './types';
 import CreateApplicationModel  from './create_application_modal';
 
@@ -23,6 +23,7 @@ const Home : React.FC = () => {
 
     const [applications, setApplications] = React.useState<Application[]>([])
     const [addModal, setAddModal] = React.useState<boolean>(false);
+    const [editModal, setEditModal] = React.useState<boolean>(false);
     const [addedApplication, setAddedApplication] = React.useState<Application>({
         Id: '',
         Owner: '',
@@ -32,6 +33,7 @@ const Home : React.FC = () => {
         Description: ''
     })
     // fetch now 
+    const  navigate = useNavigate();
 
    const onSubmit = async () => {
 
@@ -39,7 +41,7 @@ const Home : React.FC = () => {
 
         try {
            const res =await fetch(`${base_url_api}/application`, {
-                method: 'POST',
+                method: editModal? 'PUT' : 'POST',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -108,43 +110,63 @@ const Home : React.FC = () => {
         .then(data => console.log(data))
     },[])
 
+    const openEditModal = (index:number) => {
+        setAddedApplication(applications[index])
+        setEditModal(true)
+    }
 
 
     return (
         <div className="flex w-full flex-wrap justify-center">
-            <div className="w-full flex justify-center">
-                <h1 className="text-2xl font-bold">Welcome to the Home Page</h1>
+            <div className="w-full flex justify-center p-5">
+                <h1 className=" text-3xl font-bold"> Application View : </h1>
             </div>
-            <div className="w-full flex justify-center">
-                <h1 className="text-2xl font-bold">Applications</h1>
-            </div>
-            <div className="w-full flex justify-center">
-                <button onClick={()=> setAddModal(true)} className="bg-blue-500 text-white p-2 rounded-md">Add Application</button>
+            <div className="w-full flex justify-center p-5">
+                <button onClick={()=> setAddModal(true)} className="bg-blue-500 text-2xl text-white p-2 py-5 px-5 rounded-md">Add Application</button>
             </div>
 
            
-                
-            <div className="w-full flex justify-center flex-wrap">
-                <h1 className="text-2xl font-bold">Applications</h1>
             
             {
-                addModal?
+                (addModal||editModal)?
                 CreateApplicationModel({
-                    cancel: ()=> setAddModal(false),
+                    cancel: ()=> {
+                        setAddModal(false)
+                        setEditModal(false)
+                    },
                     onChange: onChange,
                     state: addedApplication,
                     submission: onSubmit
                 })
-                :<div className='w-full flex justify-center'>
+                :<div className='w-full flex flex-wrap justify-center'>
                 {
                     applications.map((application, index) => {
                         return (
-                            <div key={index} className="w-1/3 flex justify-center">
-                                <div className="w-1/2 flex justify-center flex-wrap">
-                                    <h1 className="text-xl font-bold">{application.Name}</h1>
-                                    <p className="text-lg">{application.Description}</p>
-                                    <Link to={`/application/${application.Id}`} className="bg-blue-500 text-white p-2 rounded-md inline-block">View</Link>
-                                    <button className="bg-blue-500 text-white p-2 rounded-md">View</button>
+                            <div key={index} className="w-1/3 flex justify-center border border-5 border-red-500 p-20">
+                                <div className="w-full flex justify-center flex-wrap">
+                                    <div className='w-full justify-center'>
+                                        <h1 className="text-3xl font-bold text-center">{application.Name}</h1>    
+                                    </div>
+                                    <div className='w-full text-center'>
+                                        <h1 className='w-full text-center text-2xl font-bold pt-5'> Description : </h1>
+                                    </div>
+                                    <div className='w-full text-center text-lg p-3'>
+                                        <p className="text-lg">{application.Description}</p>
+                                    </div> 
+                                    <div className='w-full text-center text-lg p-3'>
+                                        <p className='text-2xl font-bold pr-3'> Created At : </p>
+                                        <p className="text-lg"> {application.Time_Created.split('.')[0].split("T").join("  ")}</p>
+                                    </div>
+
+                                    <div className='w-full text-center text-lg p-3'>
+                                        <p className='text-2xl font-bold pr-3'> Lasted Modified : </p>
+                                        <p className="text-lg"> {application.Time_Edited.split('.')[0].split("T").join("  ")}</p>
+                                    </div>
+                                    <div className='w-full flex justify-around items-center'>
+                                        <Link to={`/application/${application.Id}`} className="bg-blue-500 text-white p-2 rounded-md w-32 h-12">View</Link>
+                                        <button className="bg-blue-500 text-white p-2 rounded-md w-32 h-12" onClick={() => navigate(`/application/${application.Id}`)}>View</button>
+                                        <button className="bg-blue-500 text-white w-32 h-12 rounded-md inline-block" onClick={() => openEditModal(index)}> Edit</button>                                        
+                                    </div >
                                 </div>
                             </div>
                         )
@@ -153,7 +175,6 @@ const Home : React.FC = () => {
             </div>
             }
 
-        </div>
 
         </div>
     )

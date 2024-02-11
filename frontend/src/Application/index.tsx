@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Application, CorsTests } from '../Home/types';
 import AddTestPanel from './AddTestPanel';
 
@@ -29,6 +29,8 @@ const ApplicationDisplay: React.FC = () => {
         Authentication: false,
         Created_at: ''
     })
+
+    const navigator = useNavigate();
 
     const handleSubmission = async () => {
 
@@ -179,7 +181,7 @@ const ApplicationDisplay: React.FC = () => {
             )
         }
         return (
-            <div>
+            <div className='w-full flex flex-wrap'>
                     {tests.map((test, index) => {
                         return (
                             <div key={index}>
@@ -240,26 +242,64 @@ const ApplicationDisplay: React.FC = () => {
 
     }
 
+
     return (
-        <div>
-            <button onClick={()=> setAddModal(true)}>Add Test</button>
-            <button onClick={()=> window.location.href = '/'}>Back</button>
-           <Link to={`/results/${application.Id}`} className="bg-blue-500 text-white p-2 rounded-md inline-block">View Results</Link>
-            <button onClick={runTests}>Run Tests</button>
+        <div className='w-full flex flex-wrap justify-around'>
+            <div className='w-full flex justify-around p-30'>
+                
+                <button className='bg-blue-500 w-40 h-12 rounded-md' onClick={()=> window.location.href = '/'}>Back</button>
+                <button className='bg-blue-500 w-40 h-12 rounded-md' onClick={()=> setAddModal(true)}>Add Test</button>
+                <button className='bg-blue-500 w-40 h-12 rounded-md' onClick={()=> navigator(`/results/${application.Id}`)}>View Results</button>
+                <button className='bg-blue-500 w-40 h-12 rounded-md' onClick={runTests}>Run Tests</button>
+            </div> 
 
+            <div className='w-full flex justify-center p-5'>
+                <h1 className='text-3xl text-center'> Application Details </h1>
+            </div>
+            <div className='w-full flex justify-center p-5'>
+                <div className='w-1/2 flex flex-wrap justify-center p-5'>
+                    <div className='w-full flex justify-center'>
+                        <h1 className='text-3xl'>Application Name : </h1>
+                    </div>
+                    <div className='w-full flex justify-center'>
+                        <p className='text-2xl'>{application?.Name}</p>
+                    </div>
 
-            <h1>Application</h1>
-            
-            <h2>{application?.Name}</h2>
-            <p>{application?.Description}</p>
-            <p> {application?.Owner}</p>
-            <p>{application?.Id}</p>
-            <p>{application?.Time_Created}</p>
-            <p>{application?.Time_Edited}</p>
-            <p></p>
+                    <div className='w-full flex justify-center p-5'>
+                        <h1 className='text-3xl'>Application Description : </h1>
+                        </div>
+                    <div className='w-full flex justify-center'>
+                        <p className='text-2xl'>{application?.Description}</p>
+                    </div>
 
-            <h1>Tests</h1>
-            {TestsPanel()}
+                    <div className='w-full flex justify-center p-5'>
+                        <h1 className='text-3xl'>Creation Date : </h1>
+                    </div>
+
+                    <div className='w-full flex justify-center'>
+                        <p className='text-2xl'>{application?.Time_Created.split(".")[0].split("T").join("  ")}</p>
+                    </div>
+
+                    <div className='w-full flex justify-center p-5'>
+                        <h1 className='text-3xl'>Last Updated : </h1>
+                    </div>
+
+                    <div className='w-full flex justify-center'>
+                        <p className='text-2xl'>{application?.Time_Edited.split(".")[0].split("T").join("  ")}</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <div className='w-full flex justify-center p-5'>
+                <div className='w-full flex justify-center text-center'>
+                    <h1 className='text-3xl'>Tests</h1>
+                </div>
+
+                <div className='w-full flex justify-center p-5'>
+                    {TestsPanel()}
+                </div>
+            </div>
         </div>
     )
 }
