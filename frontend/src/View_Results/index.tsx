@@ -113,7 +113,8 @@ const ViewResults: React.FC = () => {
                 filteredResults.map((result, index) => {
                     return (
                         <div key={result.Id} className={`p-4 ${result.Okay ? 'bg-green-200' : 'bg-red-200'}`}>
-                    
+                            <button className="br-400 p-5" onClick={()=> setExpanded([...expanded.slice(0,index), !expanded[index], ...expanded.slice(index+1,-1)])}> Expand </button>
+                            <button className="bg-400 p-5" onClick={()=> setExpanded([...expanded.slice(0,index), !expanded[index], ...expanded.slice(index+1,-1)])}> Unexpand </button>
                             <h1 onClick={()=> setExpanded([...expanded, !expanded[index]])}>{result.Origin}:{result.Header}:{result.Method}</h1>
                             {
                                 expanded[index] && (
