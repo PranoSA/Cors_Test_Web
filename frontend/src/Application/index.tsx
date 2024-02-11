@@ -214,11 +214,6 @@ const ApplicationDisplay: React.FC = () => {
         )
     }
 
-    const seeTestViewer = (id:string) => {
-        // //results/8271482f-f368-4c46-9884-0c0e27533cc
-
-
-    }
 
     const runTests = async() => {
 

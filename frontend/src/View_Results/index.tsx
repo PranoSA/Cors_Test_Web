@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import {CorsTestResults} from '../Home/types'
 import { useParams } from 'react-router-dom';
+
+type FilterResultsQuery = {
+    Origin : string,
+    Desination : string,
+    Method : string,
+    Header : string,
+}
 
 const ViewResults: React.FC = () => {
 
@@ -9,7 +16,58 @@ const ViewResults: React.FC = () => {
 
     const [results, setResults] = React.useState<CorsTestResults[]>([]);
 
+    const [filterState, setFilterState] = React.useState<FilterResultsQuery>({
+        Origin: '',
+        Desination: '',
+        Method: '',
+        Header: '',
+    })
+
+    const [filteredResults, setFilteredResults] = React.useState<CorsTestResults[]>([])
+
     const {id} = useParams<{id:string}>();
+
+    useEffect(() => {
+
+        if (results.length === 0) {
+            return
+        }
+
+
+
+
+            const corsTestResults = results.filter((result) => {
+                if(filterState.Origin !== '' && result.Origin !== filterState.Origin) {
+                    return false
+                }
+                return true 
+            }).filter((result) => {
+                if(filterState.Desination !== '' && result.Endpoint !== filterState.Desination) {
+                    return false
+                }
+                return true 
+            }
+            ).filter((result) => {
+                if(filterState.Method !== '' && result.Method !== filterState.Method) {
+                    return false
+                }
+                return true 
+            }
+            ).filter((result) => {
+                if(filterState.Header !== '' && result.Header !== filterState.Header) {
+                    return false
+                }
+                return true
+            })   
+    
+            console.log(corsTestResults)
+    
+            setFilteredResults(corsTestResults)
+
+
+
+    }, [results, filterState])
+
 
     React.useEffect(() => {
         const fetchResults = async () => {
@@ -35,10 +93,24 @@ const ViewResults: React.FC = () => {
         )
     }
 
+    //Filter Panel
+    const FilterPanel = () => {
+        return (
+            <div>
+                <input type="text" placeholder="Origin" value={filterState.Origin} onChange={(e) => setFilterState({...filterState, Origin: e.target.value})} />
+                <input type="text" placeholder="Desination" value={filterState.Desination} onChange={(e) => setFilterState({...filterState, Desination: e.target.value})} />
+                <input type="text" placeholder="Method" value={filterState.Method} onChange={(e) => setFilterState({...filterState, Method: e.target.value})} />
+                <input type="text" placeholder="Header" value={filterState.Header} onChange={(e) => setFilterState({...filterState, Header: e.target.value})} />
+            </div>
+        )
+    }
+
     return (
         <div>
+
+            {FilterPanel()}
             {
-                results.map((result, index) => {
+                filteredResults.map((result, index) => {
                     return (
                         <div key={result.Id} className={`p-4 ${result.Okay ? 'bg-green-200' : 'bg-red-200'}`}>
                     
