@@ -1,6 +1,7 @@
 package router
 
 import (
+	"log"
 	"net/http"
 
 	tokenauthentication "github.com/PranoSA/Cors_Test_Web/backend/token_authentication"
@@ -21,23 +22,35 @@ func HealthCheck(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (a *Application) StartServer() {
-	a.Router.GET("/api/v1/application", a.ListCorsTestApplications)
-	a.Router.GET("/api/v1/application/:id", a.GetCorsTestApplication)
-	a.Router.POST("/api/v1/application", a.CreateCorsTestApplication)
-	a.Router.PUT("/api/v1/application/:id", a.EditCorsTestApplication)
-	a.Router.DELETE("/api/v1/application/:id", a.DeleteCorsApplication)
+func OptionsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	log.Default().Println("OPTIONS request")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie")
+	w.Header().Set("Access-Control-Max-Age", "86400")
+	w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.WriteHeader(http.StatusNoContent)
+}
 
-	a.Router.GET("/api/v1/tests/:id", a.ListCorsTest)
-	a.Router.POST("/api/v1/test/:id", a.CreateCorsTest)
-	a.Router.PUT("/api/v1/test/:id", a.EditCorsTest) //id in this instance is the testid
-	a.Router.DELETE("/api/v1/test/:id", a.DeleteCorsTest)
-	a.Router.GET("/api/v1/test/:id", a.GetCorsTest)
+func (a *Application) StartServer() {
+	a.Router.OPTIONS("/*path", OptionsHandler)
+	//a.Router.OPTIONS("/api/v1/*path", OptionsHandler)
+	a.Router.GET("/api/v1/application", CorsMiddlware(a.ListCorsTestApplications))
+	a.Router.GET("/api/v1/application/:id", CorsMiddlware(a.GetCorsTestApplication))
+	a.Router.POST("/api/v1/application", CorsMiddlware(a.CreateCorsTestApplication))
+	a.Router.PUT("/api/v1/application/:id", CorsMiddlware(a.EditCorsTestApplication))
+	a.Router.DELETE("/api/v1/application/:id", CorsMiddlware(a.DeleteCorsApplication))
+
+	a.Router.GET("/api/v1/tests/:id", CorsMiddlware(a.ListCorsTest))
+	a.Router.POST("/api/v1/test/:id", CorsMiddlware(a.CreateCorsTest))
+	a.Router.PUT("/api/v1/test/:id", CorsMiddlware(a.EditCorsTest)) //id in this instance is the testid
+	a.Router.DELETE("/api/v1/test/:id", CorsMiddlware(a.DeleteCorsTest))
+	a.Router.GET("/api/v1/test/:id", CorsMiddlware(a.GetCorsTest))
 
 	//Now Generate The Tests for the application
 
-	a.Router.GET("/api/v1/results/:id", a.GetCorsTestResults) // Don't Really Need a Singular Version
-	a.Router.POST("/api/v1/result/:id", a.RunCorsTest)
+	a.Router.GET("/api/v1/results/:id", CorsMiddlware(a.GetCorsTestResults)) // Don't Really Need a Singular Version
+	a.Router.POST("/api/v1/result/:id", CorsMiddlware(a.RunCorsTest))
 
 	/*a.Router.PUT("/api/v1/application/{id}", a.EditCorsTestApplication)
 	a.Router.DELETE("/api/v1/application/{id}", a.DeleteCorsApplication)

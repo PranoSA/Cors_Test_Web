@@ -40,6 +40,7 @@ func (a Application) CreateCorsTest(w http.ResponseWriter, r *http.Request, para
 	_, err := uuid.Parse(applicationId)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid Application Id"))
 		return
 	}
 
@@ -53,7 +54,14 @@ func (a Application) CreateCorsTest(w http.ResponseWriter, r *http.Request, para
 	// Get the application from the request
 	corsTest := CorsTestRequest{}
 
-	json.NewDecoder(r.Body).Decode(&corsTest)
+	err = json.NewDecoder(r.Body).Decode(&corsTest)
+	if err != nil {
+		w.Write([]byte("Invalid Request JSON"))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	log.Default().Print(corsTest)
 
 	if corsTest.Origin == "" || corsTest.Endpoint == "" || corsTest.Methods == "" {
 		log.Default().Print("Invalid Request")

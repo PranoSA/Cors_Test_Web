@@ -104,7 +104,7 @@ func RunCorsTest(ctr *CorsTestRequest) error {
 		return nil
 	}
 
-	req, err := http.NewRequest("OPTIONS", "https://"+ctr.Endpoint, nil)
+	req, err := http.NewRequest("OPTIONS", ctr.Endpoint, nil)
 	if err != nil {
 		return err
 	}
