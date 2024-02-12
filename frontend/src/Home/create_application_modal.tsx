@@ -17,7 +17,7 @@ const CreateApplicationModel= (props:CreateApplicationModelProps) => {
             <div className="w-full flex justify-center p-5">
                 <h1 className='text-center text-3xl '>Create Application</h1>
             </div>
-
+            
             <div className="w-1/2 flex justify-center p-5">
                 <button onClick={()=> props.cancel()} className="bg-red-500 text-2xl text-white p-2 py-5 px-5 rounded-md">Cancel</button>
             </div>
